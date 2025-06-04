@@ -33,19 +33,35 @@ jobs:
      #Tests work but will fail due to no database present.   
     #- name: Test with unittest
       #run: testapp.py
+      
+    - name: Make dummy change (for demo)
+      run: |
+        echo "Updated at $(date)" >> update-log.txt
 
-    - name: Create pull request
+    - name: Configure Git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Create new branch and push changes
+      run: |
+        git checkout -b update-branch
+        git add .
+        git commit -m "Automated update commit" || echo "No changes to commit"
+        git push origin update-branch || echo "Branch already exists"
+
+    - name: Create Pull Request
       id: cpr
       uses: peter-evans/create-pull-request@v5
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         title: "Automated PR to main"
-        body: "This PR was created automatically."
+        body: "This PR was created automatically by GitHub Actions."
         base: main
         branch: update-branch
-        delete-branch: true
-        token: ${{ secrets.GITHUB_TOKEN }}
+        delete-branch: false
 
-    - name: Auto-merge pull request
+    - name: Merge Pull Request
       if: steps.cpr.outputs.pull-request-url != ''
       run: |
         gh pr merge ${{ steps.cpr.outputs.pull-request-url }} --merge --admin --delete-branch
