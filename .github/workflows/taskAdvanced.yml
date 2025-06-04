@@ -7,44 +7,62 @@ on:
     types:
       - opened
       - synchronize
-      
+
   workflow_dispatch:
-  
+
 jobs:
-  create_and_approve_pr:
-    if: github.event.pull_request.merged == false
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Create branch-update branch from main
-        run: |
-          git fetch origin
-          git checkout -b branch-update origin/main
-          git push origin branch-update --force
-
-      - name: Create PR to branch-update
-        id: create_pr
-        uses: peter-evans/create-pull-request@v5
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: branch-update
-          branch: main
-          title: "Auto PR: Merge main into branch-update"
-          body: "This PR was automatically created after a merge into main."
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Approve the PR
-        if: steps.create_pr.outputs.pull-request-number != ''
-        uses: hmarr/auto-approve-action@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+    #Flask dosent require a build.
+
+    #Tests work but will fail due to no database present.
+    #- name: Test with unittest
+    #run: testapp.py
+
+  create_and_approve_pr:
+  runs-on: ubuntu-latest
+  permissions:
+    contents: write
+    pull-requests: write
+
+  steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Configure Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Create branch-update branch from main
+      run: |
+        git fetch origin
+        git checkout -b branch-update origin/main
+        git push origin branch-update --force
+
+    - name: Create PR to branch-update
+      id: create_pr
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        base: branch-update
+        branch: main
+        title: "Auto PR: Merge main into branch-update"
+        body: "This PR was automatically created after a merge into main."
+
+    - name: Approve the PR
+      if: steps.create_pr.outputs.pull-request-number != ''
+      uses: hmarr/auto-approve-action@v3
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
