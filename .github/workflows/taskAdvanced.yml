@@ -38,16 +38,16 @@ jobs:
       id: cpr
       uses: peter-evans/create-pull-request@v5
       with:
-          title: "Automated PR to main"
-          body: "This PR was created automatically."
-          base: main
-          branch: update-branch
-          delete-branch: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+        title: "Automated PR to main"
+        body: "This PR was created automatically."
+        base: main
+        branch: update-branch
+        delete-branch: true
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Auto-merge pull request
       if: steps.cpr.outputs.pull-request-url != ''
       run: |
-          gh pr merge ${{ steps.cpr.outputs.pull-request-url }} --merge --admin --delete-branch
+        gh pr merge ${{ steps.cpr.outputs.pull-request-url }} --merge --admin --delete-branch
       env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
