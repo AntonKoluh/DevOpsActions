@@ -1,10 +1,10 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Python application
+name: Python application plus pull and merge
 
 on:
-  push:
+  pull_request:
     branches: [ "main" ]
     types: 
       - opened
@@ -26,25 +26,22 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-   
-    - name: Make dummy change (for demo)
-      run: |
-        echo "Updated at $(date)" >> update-log.txt
-
+        pip install -r requirements.txt
+        
     - name: Configure Git
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Create new branch and push changes
+    - name: sync main
       run: |
-        git checkout -b update-branch
-        git add .
-        git commit -m "Automated update commit" || echo "No changes to commit"
-        git push origin update-branch || echo "Branch already exists"
+        git fetch origin
+        git checkout update-branch
+        git merge origin/main --allow-unrelated-histories --no-edit
+        git push origin update-branch
 
-    - name: Create Pull Request
+
+    - name: create pull
       id: cpr
       uses: peter-evans/create-pull-request@v5
       with:
@@ -55,7 +52,7 @@ jobs:
         branch: update-branch
         delete-branch: false
 
-    - name: Merge Pull Request
+    - name: merge pull
       if: steps.cpr.outputs.pull-request-url != ''
       run: |
         gh pr merge ${{ steps.cpr.outputs.pull-request-url }} --merge --admin --delete-branch
