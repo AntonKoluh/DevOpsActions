@@ -1,60 +1,49 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: Python application plus pull and merge
+name: Create and Approve PR to branch-update
 
 on:
   pull_request:
-    branches: [ "main" ]
-    types: 
-      - opened
-      - synchronize
+    branches:
+      - main
+    types:
+      - closed
       
   workflow_dispatch:
-
+  
 jobs:
-  build:
-
+  create_and_approve_pr:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.12"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        
-    - name: Configure Git
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    - name: sync main
-      run: |
-        git fetch origin
-        git checkout update-branch
-        git merge origin/main --allow-unrelated-histories --no-edit
-        git push origin update-branch
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Create branch-update branch from main
+        run: |
+          git fetch origin
+          git checkout -b branch-update origin/main
+          git push origin branch-update --force
 
-    - name: create pull
-      id: cpr
-      uses: peter-evans/create-pull-request@v5
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        title: "Automated PR to main"
-        body: "This PR was created automatically by GitHub Actions."
-        base: main
-        branch: update-branch
-        delete-branch: false
+      - name: Create PR to branch-update
+        id: create_pr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: branch-update
+          branch: main
+          title: "Auto PR: Merge main into branch-update"
+          body: "This PR was automatically created after a merge into main."
 
-    - name: merge pull
-      if: steps.cpr.outputs.pull-request-url != ''
-      run: |
-        gh pr merge ${{ steps.cpr.outputs.pull-request-url }} --merge --admin --delete-branch
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Approve the PR
+        if: steps.create_pr.outputs.pull-request-number != ''
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
