@@ -1,17 +1,9 @@
 from peewee import *
-from dotenv import load_dotenv
-import os
+from peewee import SqliteDatabase
 import argparse
-
-load_dotenv()
 # Define the database and the model
-db = MySQLDatabase(
-    'hw1dev',
-    user='hwuser',
-    password=os.getenv('db_pass'),
-    host='192.168.0.110',
-    port=3306
-)
+
+db = SqliteDatabase('hw1dev.db')
 
 
 class ProductModel(Model):
