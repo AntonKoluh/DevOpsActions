@@ -12,7 +12,7 @@ on:
   
 jobs:
   create_and_approve_pr:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == false
     runs-on: ubuntu-latest
     permissions:
       contents: write
